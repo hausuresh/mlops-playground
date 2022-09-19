@@ -1,2 +1,1 @@
-# pf-model
- Repository for pf homework
+Repository for pf homework
