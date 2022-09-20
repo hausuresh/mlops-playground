@@ -1,0 +1,12 @@
+# define args for train model
+name: pf-toy-model
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      max_depth: {type: float, default: 3}
+      n_estimators: {type: float, default: 50}
+      data_month: {type: int, default: 4}
+    command: "python train.py {max_depth} {n_estimators} {data_month}"
