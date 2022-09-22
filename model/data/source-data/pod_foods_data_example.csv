@@ -1,0 +1,23 @@
+table,columns,notes
+data_order,ORDER_ID,the ID of a particular order placed by grocery store
+data_order,STORE_ID,the ID of a particular grocery store
+data_order,REGION_ID,the region from which a particular order is placed
+data_order,BRAND_ID,the ID of a particular brand; hierarchichal: brand > product > product_variant
+data_order,PRODUCT_ID,the ID of a paricular product
+data_order,PRODUCT_VARIANT_ID,the ID of a variant of a particular product
+data_order,QUANTITY,the number of cases ordered of the product variant
+data_order,VARIANT_CASE_PRICE_CENTS,the price in cents for a given case of the product variant ordered
+data_order,CHECKOUT_DATE,the date on which the order was placed
+data_metadata_product,PRODUCT_ID,the ID of the product
+data_metadata_product,PRODUCT_METADATA,characteristics of a given product ID
+data_metadata_store,STORE_ID,the ID of the store
+data_metadata_store,STORE_TYPE,characteristics of a given store ID
+data_metadata_store,REGION_ID,the region in which the store ID is located
+data_metadata_store,STORE_SIZE,the size 'bin' for a given store ID
+,,
+,,
+,,
+,,
+data_summary,,
+the order data are from a period of the first 5 months (Jan 1 through end of May),,
+We would like make ordering forecasts for a given store and a given product,,

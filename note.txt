@@ -1,0 +1,11 @@
+impute null: store_region_id, store_size, store_type
+label encode: product_metadata
+    df_product['product_metadata'] = LabelEncoder().fit_transform(df_product['product_metadata'])
+one hot: store_type,product_metadata
+
+comments
+- Xử lý category/ null value mới trong tương lai
+
+
+
+#data = data.merge(df_store, on = 'store_id', how = 'left')
