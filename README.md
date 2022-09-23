@@ -24,7 +24,7 @@ Simple architecture
 ![simpleArchitecture](images/simple-architecture.png)
 
 More details
-![Architecture](images\architecture.png)
+![Architecture](images/architecture.png)
 
 - Source Repository: A central repository. In this repo we can using both local or github
 
