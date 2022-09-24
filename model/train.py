@@ -7,7 +7,6 @@ import numpy as np
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet
-from sklearn.ensemble import GradientBoostingRegressor
 from urllib.parse import urlparse
 import mlflow
 import mlflow.sklearn
@@ -17,10 +16,12 @@ import logging
 logging.basicConfig(level=logging.WARN)
 logger = logging.getLogger(__name__)
 mlflow.set_tracking_uri('file://C:/Users/haunv/Documents/GitHub/pf-model/mlruns')
+#mlflow.set_tracking_uri("sqlite:////C:/Users/haunv/Documents/GitHub/pf-model/mlruns.db")
+#mlflow.set_tracking_uri("sqlite:///mlruns.db")
 
 # get args
-max_depth = int(sys.argv[1]) if len(sys.argv) > 1 else 3
-n_estimators = int(sys.argv[2]) if len(sys.argv) > 2 else 50
+alpha = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
+l1_ratio = float(sys.argv[2]) if len(sys.argv) > 2 else 0.1
 data_month = int(sys.argv[3]) if len(sys.argv) > 3 else 5
 # Define data source
 TRAIN_FILE_PATH = "C:/Users/haunv/Documents/GitHub/pf-model/model/data/train-data/training_data_month_{}.zip".format(data_month)
@@ -43,8 +44,7 @@ def split_data(data, rand):
         Custom split to avoid data leakage
         return: X_train, X_test, y_train, y_test
     '''
-    data.drop(['store_id','product_id'],axis=1,inplace=True)
-
+    
     df_train_avl = data[data['label']>0]
     df_train_notavl = data[data['label']==0]
     y_aval = df_train_avl.pop('label')
@@ -81,31 +81,35 @@ def eval_metrics(actual, pred):
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     data = get_training_data(url=TRAIN_FILE_PATH)
-
-    # Split the data into training and test sets. (0.75, 0.25) split.
+    
+    # Split data
     train_x, test_x,train_y,test_y = split_data(data=data,rand=rand)
-    print(mlflow.get_tracking_uri())
-    with mlflow.start_run(run_name='toy-model-1'):
-        lr = GradientBoostingRegressor(max_depth=max_depth, n_estimators=n_estimators, random_state=rand)
+    
+    with mlflow.start_run(run_name='toy-model-1') as run:
+        lr = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, random_state=rand)
         lr.fit(train_x, train_y)
 
         predicted_qualities = lr.predict(test_x)
 
         (rmse, mae, r2) = eval_metrics(test_y, predicted_qualities)
 
-        print("GradientBoostingRegressor model (max_depth=%f, n_estimators=%f):" % (max_depth, n_estimators))
+        print("Toy model (alpha=%f, l1_ratio=%f):" % (alpha, l1_ratio))
         print("  RMSE: %s" % rmse)
         print("  MAE: %s" % mae)
         print("  R2: %s" % r2)
 
-        mlflow.log_param("max_depth", max_depth)
-        mlflow.log_param("n_estimators", n_estimators)
+        mlflow.log_param("alpha", alpha)
+        mlflow.log_param("l1_ratio", l1_ratio)
+        mlflow.log_param("data_month", data_month)
+
         mlflow.log_metric("rmse", rmse)
         mlflow.log_metric("r2", r2)
         mlflow.log_metric("mae", mae)
 
         tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
         
+        # check info
+        run.info.run_id
         # Model registry does not work with file store
         if tracking_url_type_store != "file":
 
@@ -113,6 +117,11 @@ if __name__ == "__main__":
             # There are other ways to use the Model Registry, which depends on the use case,
             # please refer to the doc for more information:
             # https://mlflow.org/docs/latest/model-registry.html#api-workflow
-            mlflow.sklearn.log_model(lr, "model", registered_model_name="GradientBoostingRegressor")
+            mlflow.sklearn.log_model(lr, "model", registered_model_name="ElasticNet")
         else:
             mlflow.sklearn.log_model(lr, "model")
+
+    # model_uri = "runs:/{}/sklearn-model".format(run.info.run_id)
+    # mv = mlflow.register_model(model_uri, "toy-model-1")
+    # print("Name: {}".format(mv.name))
+    # print("Version: {}".format(mv.version))

@@ -13,8 +13,8 @@ from typing import Dict, List, Union
 logger = logging.getLogger()
 
 MLFLOW_SERVER = "model"
-DATA_SOURCE = "http://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
-MODEL_URI = 'gs://seldon-models/v1.10.0-dev/mlflow/elasticnet_wine'
+DATA_SOURCE = "https://github.com/hausuresh/pf-model/raw/main/model/data/train-data/vocab_data_month_5.zip"
+MODEL_URI = 'gs://pod-seldon-model/pod-toy-model/model'
 
 class MLFlowServerCustom(SeldonComponent):
     def __init__(self, model_uri: str, xtype: str = "ndarray"):
@@ -32,16 +32,14 @@ class MLFlowServerCustom(SeldonComponent):
         self._model = pyfunc.load_model(model_folder)
         logger.info(f"Get data from {DATA_SOURCE}")
         #Cache data source
-        self.df = pd.read_csv(DATA_SOURCE,sep=";")
-        self.df.columns =['fixed_acidity','volatile_acidity','citric_acid','residual_sugar','chlorides','free_sulfur_dioxide','total_sulfur_dioxide','density','pH','sulphate','alcohol','quality']
-
+        self.df = pd.read_csv(DATA_SOURCE)
         self.ready = True
 
     def predict(
         self, X: np.ndarray, feature_names: List[str] = [], meta: Dict = None
     ) -> Union[np.ndarray, List, Dict, str, bytes]:
         logger.debug(f"Requesting prediction with: {X}")
-        #print("URI: {}".format(self.model_uri))
+
         if not self.ready:
             raise requests.HTTPError("Model not loaded yet")
         else: 
@@ -87,9 +85,13 @@ class MLFlowServerCustom(SeldonComponent):
         raise SeldonNotImplementedError("prediction result is not a dataframe")
 
     def pre_process(self, X: np.ndarray):
-        df = self.df[['fixed_acidity','volatile_acidity','citric_acid','residual_sugar','chlorides','free_sulfur_dioxide','total_sulfur_dioxide','density','pH','sulphate','alcohol']]
+        df = self.df
         # Process dataframe
-        X = pd.DataFrame(X,columns=['fixed_acidity','volatile_acidity','citric_acid','residual_sugar','chlorides','free_sulfur_dioxide','total_sulfur_dioxide','density','pH','sulphate'])
-        X = X.merge(df, how = 'left', on = ['fixed_acidity','volatile_acidity','citric_acid','residual_sugar','chlorides','free_sulfur_dioxide','total_sulfur_dioxide','density','pH','sulphate'] ).fillna(0).drop_duplicates()
+        X = pd.DataFrame(X,columns=['store_id','product_id'])
+        # Get store_id & product_id metadata from vocab
+        X = X.merge(df, how = 'left', on = ['store_id','product_id'] ).fillna(0).drop_duplicates()
+        X = X.drop(['store_id','product_id'],axis=1)
+
         logger.debug(np.array(X, dtype=float))
+
         return np.array(X, dtype=float)

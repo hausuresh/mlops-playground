@@ -6,6 +6,28 @@ one hot: store_type,product_metadata
 comments
 - Xử lý category/ null value mới trong tương lai
 
+- Cần thêm file regis_model.ipynb: Upload artifact to gcp, s3
+
+- Hyper parameter
+https://github.com/mlflow/mlflow/blob/master/examples/hyperparam/README.rst
+
+- wording local url
+from pathlib import Path
+MODEL_DIR = Path(os.getcwd()) / "elasticnet_wine_model"
+shutil.rmtree(MODEL_DIR, ignore_errors=True)
+
+- Benchmark
+https://docs.seldon.io/projects/seldon-core/en/latest/examples/python_serialization.html
+
+- Auto scaling
+https://docs.seldon.io/projects/seldon-core/en/latest/examples/autoscaling_example.html
+
+- Metrics (dashboard)
+https://docs.seldon.io/projects/seldon-core/en/latest/examples/runtime_metrics_tags.html
 
 
-#data = data.merge(df_store, on = 'store_id', how = 'left')
+port forward ?
+kubectl port-forward $(kubectl get pods -l istio=ingressgateway -n istio-system -o jsonpath='{.items[0].metadata.name}') -n istio-system 8003:80
+
+
+34.126.90.125:80

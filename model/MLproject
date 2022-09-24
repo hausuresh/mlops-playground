@@ -6,7 +6,7 @@ conda_env: conda.yaml
 entry_points:
   main:
     parameters:
-      max_depth: {type: float, default: 3}
-      n_estimators: {type: float, default: 50}
-      data_month: {type: int, default: 4}
-    command: "python train.py {max_depth} {n_estimators} {data_month}"
+      alpha: {type: float, default: 0.5}
+      l1_ratio: {type: float, default: 0.1}
+      data_month: {type: int, default: 5}
+    command: "python train.py {alpha} {l1_ratio} {data_month}"
