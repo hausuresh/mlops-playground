@@ -1,2 +1,4 @@
 sklearn
 facets-overview
+seaborn
+numpy==1.21.6

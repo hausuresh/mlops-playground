@@ -3,7 +3,7 @@ Repository for pf homework
 ```
 pf-model
 │   README.md - Setup guide
-│
+└───pf_toy_model_development.ipynb - development jupyter notebook
 └───mlflowserver
 │   │   MLFlowServerCustom.py - Logic code for a new custom seldon core server with pre-processing data function
 │   │   requirement.txt - required libraries for custom seldon core server
@@ -57,6 +57,11 @@ More details
 
 # II. Pre-requisites 🧰
 
+
+```bash
+!git clone https://github.com/hausuresh/pf-model.git
+```
+
 ## Anaconda
 
 We're using Anaconda for easy manage develop environment
@@ -65,42 +70,85 @@ Details : https://docs.anaconda.com/anaconda/install/
 
 Create new environment
 ```bash
-!conda create --n podfoods python=3.7
+!conda create --n podfood python=3.7
 ```
+
 ## MLFlow
 
 ```bash
 !pip install mlflow
 ```
 
-## Seldon
-
-- Seldon Core
+## Seldon Core
 
 Setup document on local / Cloud... details: https://docs.seldon.io/projects/seldon-core/en/latest/nav/installation.html
 
 *Note: Seldon core is recommended install on GCP environment*
 
-## s2i (Source to Image)
+## S2I (Source to Image)
 
 https://github.com/openshift/source-to-image#installation
 
-We using s2i to build custom serving server later
+s2i is used to build custom serving server later
 
 
 # III. Training model
 
+0. Model development
+
 ```bash
-!mlflow run model -P max_depth=3 n_estimators=50 data_month=5
+!pip install -r requirement.txt
+```
+
+['pf_toy_model_development.ipynb'](pf_toy_model_development.ipynb)
+
+1. MLflow Project
+
+The MLproject file defines:
+- Environment where training runs
+- The parameters (alpha, l1_ratio in our case)
+
+```YAML
+# model\MLproject file
+name: pf-toy-model
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      alpha: {type: float, default: 0.5}
+      l1_ratio: {type: float, default: 0.1}
+      data_month: {type: int, default: 5}
+    command: "python train.py {alpha} {l1_ratio} {data_month}"
+```
+
+Train model command via MLFlow
+```bash
+!mlflow run model -P alpha=0.5 l1_ratio=0.1 data_month=5
 ```
 or
 ```bash
-!python model/train.py 3 50 5
+!python model/train.py 0.5 0.1 5
 ```
+or using central repositories 
+
+```bash
+!mlflow run https://github.com/pf-model...
+```
+
 
 Interactive with jupyter notebook model/train_model.ipynb
 
-# IV. Model exprimental management
+1. MLFlow Model tracking
+
+MLFlow artifacts (parameters, evaluation metrics... ) can be stored on a remote server, which can then be shared across the entire team. However, on our example we will store these locally on a mlruns folder
+
+```bash
+!ls mlruns/0
+```
+
+Web UI
 
 ```bash
 !mlflow ui
@@ -112,11 +160,40 @@ http://localhost:5000
 Test serve model at local
 
 ```bash
-mlflow models serve -m C:\Users\haunv\Documents\GitHub\pf-model\mlruns\0\100ab95827c749d6803bb1093b36cd43\artifacts\model -p 1234
-http://127.0.0.1:1234/invocations
-{"data":[[0,0,0,0,0,28,4,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}
-curl -d '{"columns":["x"], "data":[[1], [-1]]}' -H 'Content-Type: application/json; format=pandas-split' -X POST localhost:1234/invocations
+!mlflow models serve -m mlruns\0\100ab95827c749d6803bb1093b36cd43\artifacts\model -p 1234
 
+!curl --location --request POST 'http://127.0.0.1:1234/invocations' --header 'Content-Type: application/json' --data-raw '{ "data": [ [ 0, 0, 0, 0, 0, 28, 4, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ] ] }' 
+```
+
+Note: We do preprocessing later (at serving phase, so the input data for this model local test is in model's original features)
+
+
+3. MLFlow Model
+
+MLFlow artifacts are stored at mlruns folder
+
+```bash
+!ls mlruns/0
+```
+
+MLFlow python SDK allow us to get the best experiment id (more detail at model/train_model.ipynb)
+
+```python
+import mlflow
+mlflow.search_runs(order_by=['metrics.RMSE ASC'], max_results=1)
+```
+
+Optional: Upload model artifacts
+
+We will persist the models we have just trained using MLflow. For that, we will upload them into Google Cloud Storage.
+Note that in a production setting, MLflow would be configured to log models against a persistent data store (e.g NFS, GCS, Minio, S3 etc.)
+
+```bash
+!gsutil cp -r mlruns/0/65ac7f76fa744997a460fe8f5facbbba/* gs://pod-seldon-model/pod-toy-model/model
+```
+or 
+```bash
+!aws s3 cp mlruns/0/65ac7f76fa744997a460fe8f5facbbba/* s3://bucket
 ```
 
 # V. Build model docker image
@@ -125,7 +202,7 @@ curl -d '{"columns":["x"], "data":[[1], [-1]]}' -H 'Content-Type: application/js
 !make
 ```
 
-Test docker image locall
+Test docker image local
 
 ```bash
 !docker run -it --rm -p 8080:8080 -e PREDICTIVE_UNIT_PARAMETERS='[{"type":"STRING","name":"model_uri","value":"file:///model"}]' -v /home/haunv_it/pod-toy-model/model:/model haunv/mlflowservercustom:latest
@@ -141,7 +218,8 @@ Push to docker hub (Edit corresponding to your docker hub repositories)
 
 1. Edit seldon ML servers config values (MLFLOW_SERVER_CUSTOM)
 
-```yaml
+```YAML
+#deploy\values.yaml
 predictor_servers:
 ...
   TEMPO_SERVER:
@@ -166,13 +244,12 @@ predictor_servers:
     
 ```
 
-3. Upload Artifacts 
-
-4. Deploy model to K8S 
+3. Deploy model to K8S 
 
 YAML file
 
-```yaml
+```YAML
+#deploy\seldon-deploy-toy-model.yaml
 apiVersion: machinelearning.seldon.io/v1alpha2
 kind: SeldonDeployment
 metadata:
@@ -227,12 +304,18 @@ Create K8S namespace
 
 check k8s status
 ```bash
-kubectl get pods --all-namespaces
+!kubectl get pods -n seldon
+```
+Our pod is ready
+
+```console
+NAME                                             READY   STATUS    RESTARTS   AGE
+toy-model-default-0-regressor-7d4859989d-265v5   2/2     Running   0          20h
 ```
 
 - Serving endpoint
 
-> http://<ingress_url>/seldon/<namespace>/<model-name>/api/v1.0/predictions
+`http://<ingress_url>/seldon/<namespace>/<model-name>/api/v1.0/predictions`
 
   example: http://34.126.90.125/seldon/seldon/toy-model/api/v1.0/predictions
 
@@ -263,7 +346,10 @@ model return prediction result is 14.56 for the next 30days
 
 - API document
 
-http://34.126.157.32/seldon/seldon/toy-model/api/v1.0/predictions
+`http://<ingress_url>/seldon/<namespace>/<model-name>/api/v1.0/doc`
+
+Example: http://34.126.90.125/seldon/seldon/toy-model/api/v1.0/doc/#/
+
 ![apidocument](images/seldon-api-document.png)
 
 
@@ -320,7 +406,7 @@ https://docs.seldon.io/projects/seldon-core/en/latest/graph/scaling.html
 
 ??? Why we dont using Flask only?
 
-- On the REAL production, depend on requiremnent some components are considered:
+- On the REAL production, depend on requirement some components are considered:
 
   - Expriment service: A/B testing
   - CI/CD components: Jenkin & JenkinX

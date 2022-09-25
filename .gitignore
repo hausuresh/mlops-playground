@@ -1,3 +1,5 @@
 
 data/train-data/.tmp
 mlruns.db
+model/data/train-data/training_data_month_5.csv
+model/data/train-data/vocab_data_month_5.csv

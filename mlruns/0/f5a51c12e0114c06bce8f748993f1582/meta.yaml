@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/haunv/Documents/GitHub/pf-model/mlruns/0/f5a51c12e0114c06bce8f748993f1582/artifacts
+end_time: 1664081699982
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+name: ''
+run_id: f5a51c12e0114c06bce8f748993f1582
+run_uuid: f5a51c12e0114c06bce8f748993f1582
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1664081696022
+status: 3
+tags: []
+user_id: haunv

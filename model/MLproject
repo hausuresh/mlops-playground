@@ -1,4 +1,3 @@
-# define args for train model
 name: pf-toy-model
 
 conda_env: conda.yaml

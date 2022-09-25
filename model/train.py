@@ -1,6 +1,7 @@
 import os
 import warnings
 import sys
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
@@ -15,16 +16,20 @@ import logging
 
 logging.basicConfig(level=logging.WARN)
 logger = logging.getLogger(__name__)
-mlflow.set_tracking_uri('file://C:/Users/haunv/Documents/GitHub/pf-model/mlruns')
-#mlflow.set_tracking_uri("sqlite:////C:/Users/haunv/Documents/GitHub/pf-model/mlruns.db")
+MODEL_DIR = Path(os.getcwd())
+
+
+mlflow.set_tracking_uri(("file://"+os.path.abspath(os.path.join(MODEL_DIR, 'mlruns'))).replace("\\","/"))
 #mlflow.set_tracking_uri("sqlite:///mlruns.db")
 
 # get args
 alpha = float(sys.argv[1]) if len(sys.argv) > 1 else 0.5
 l1_ratio = float(sys.argv[2]) if len(sys.argv) > 2 else 0.1
 data_month = int(sys.argv[3]) if len(sys.argv) > 3 else 5
-# Define data source
-TRAIN_FILE_PATH = "C:/Users/haunv/Documents/GitHub/pf-model/model/data/train-data/training_data_month_{}.zip".format(data_month)
+
+# Define training data source
+# fix window/linux sep
+TRAIN_FILE_PATH = os.path.join(MODEL_DIR,'model','data','train-data','training_data_month_{}.zip'.format(data_month))
 
 # Set global random state for stable training
 np.random.seed(40)
@@ -41,8 +46,10 @@ def get_training_data(url):
 
 def split_data(data, rand):
     '''
-        Custom split to avoid data leakage
-        return: X_train, X_test, y_train, y_test
+    Custom split to avoid data leakage
+    Returns
+    -------        
+        Pandas dataframes: X_train, X_test, y_train, y_test
     '''
     
     df_train_avl = data[data['label']>0]
@@ -109,19 +116,10 @@ if __name__ == "__main__":
         tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
         
         # check info
-        run.info.run_id
+        print("Run id: {}".format(run.info.run_id))
+
         # Model registry does not work with file store
         if tracking_url_type_store != "file":
-
-            # Register the model
-            # There are other ways to use the Model Registry, which depends on the use case,
-            # please refer to the doc for more information:
-            # https://mlflow.org/docs/latest/model-registry.html#api-workflow
             mlflow.sklearn.log_model(lr, "model", registered_model_name="ElasticNet")
         else:
             mlflow.sklearn.log_model(lr, "model")
-
-    # model_uri = "runs:/{}/sklearn-model".format(run.info.run_id)
-    # mv = mlflow.register_model(model_uri, "toy-model-1")
-    # print("Name: {}".format(mv.name))
-    # print("Version: {}".format(mv.version))
