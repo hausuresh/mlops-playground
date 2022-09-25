@@ -45,15 +45,11 @@ More details
 - Seldon Core: Serving / Inference services
 
   *"Easier and faster to deploy your machine learning models and experiments at scale on Kubernetes"*
-    - Deploy model
-    - Preprocessing request
-      👉 There are 3 three ways to do preprocessing
-      - Within the model : Simple but 
-      - Transform function : Simple 
-      - Feature Store
-
-    - Monitor: Dashboard of model performance & other metrics
-
+  - Deploy model
+  - Preprocessing request
+  - Monitor: Dashboard of serving server's performance & model's metrics
+  - And more functions can be added later
+  
 - Endpoints: endpoints post request & get result from Serving service by REST / GRPC
 
 # II. Pre-requisites 🧰
@@ -197,8 +193,22 @@ or
 !aws s3 cp mlruns/0/65ac7f76fa744997a460fe8f5facbbba/* s3://bucket
 ```
 
-# V. Build custom Seldon serving server
+# V. Build custom Seldon inference server
 
+Seldon Core offers support for several pre-packaged inference servers, but our model needs to do some preprocessing steps at prediction time (get features from vocab with store_id + product_id)
+
+👉 In fact, there are 3 three ways to do preprocessing
+
+|                    |                                                            | Pros                                                            | Cons                                                                                               |
+|--------------------|------------------------------------------------------------|-----------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Within the model   | Preprocessing code is carried along [with the MLFlow model]([https://](https://www.mlflow.org/docs/latest/python_api/mlflow.pyfunc.html#pyfunc-create-custom))  | Simple, no extra infrastructure is required.                    | Preprocessing steps will be wastefully repeated on each prediction request. Loaded data isnt cached|
+| Transform function | Preprocessing code carried along with the inference server | Simple, no extra infrastructure is required. Vocab data is cached | Adds complexity than within the model. Have to build our own inference servers                     |
+| Feature Store      | Overkill in our case                                       |                                                                 |                                                                                                    |
+
+➡️ Build custom Seldon inference server solution is chosen
+
+
+Make custom server image
 ```bash
 !make
 ```
