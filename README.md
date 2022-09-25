@@ -2,18 +2,19 @@ Repository for pf homework
 
 ```
 pf-model
-│   README.md - Setup guide
+│   
+└───README.md - Guide
 └───pf_toy_model_development.ipynb - development model jupyter notebook
 └───mlflowserver
-│   │   MLFlowServerCustom.py - Logic code for a new custom seldon core server with pre-processing data function
-│   │   requirement.txt - required libraries for custom seldon core server
+│   └───MLFlowServerCustom.py - Logic code for a new custom seldon core server with pre-processing data function
+│   └───requirement.txt - required libraries for custom seldon core server
 └───deploy - yaml files for deploy model to Seldon Core on Kubernetes  
 └───images
 └───mlruns - trained model artifacts
 └───model
 │   └───data - raw, traning & vocab data
 │   └───train.py - MLFlow training model's code
-│   └───train.ipynb - MLFlow training model's notebook
+│   └───train_model.ipynb - MLFlow training model's notebook
 └───environment - define environment of custom Seldon server
 └───requirement.txt - required libraries for training model
 └───Makefile - Make custom seldon server docker
@@ -97,7 +98,7 @@ s2i is used to build custom serving server later
 !pip install -r requirement.txt
 ```
 
-['pf_toy_model_development.ipynb'](pf_toy_model_development.ipynb)
+More details here ['pf_toy_model_development.ipynb'](pf_toy_model_development.ipynb)
 
 1. MLflow Project
 
@@ -225,7 +226,7 @@ Push to docker hub (Edit corresponding to your docker hub repositories)
 !docker push haunv/mlflowservercustom:latest
 ```
 
-# VI. Deploy model docker image 
+# VI. Deploy inference docker image 
 
 1. Add our MLFLOW_SERVER_CUSTOM config to Seldon servers config values
 
