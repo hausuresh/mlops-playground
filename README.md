@@ -3,18 +3,18 @@ Repository for pf homework
 ```
 pf-model
 │   README.md - Setup guide
-└───pf_toy_model_development.ipynb - development jupyter notebook
+└───pf_toy_model_development.ipynb - development model jupyter notebook
 └───mlflowserver
 │   │   MLFlowServerCustom.py - Logic code for a new custom seldon core server with pre-processing data function
 │   │   requirement.txt - required libraries for custom seldon core server
-└───deploy - yaml files for deploy model on k8s   
+└───deploy - yaml files for deploy model to Seldon Core on Kubernetes  
 └───images
 └───mlruns - trained model artifacts
 └───model
 │   └───data - raw, traning & vocab data
-│   └───train.py - training model's code
-│   └───train.ipynb - jupyter training model's notebook
-└───environment - define environment of custom seldon server
+│   └───train.py - MLFlow training model's code
+│   └───train.ipynb - MLFlow training model's notebook
+└───environment - define environment of custom Seldon server
 └───requirement.txt - required libraries for training model
 └───Makefile - Make custom seldon server docker
 ```
@@ -27,7 +27,7 @@ Simple architecture
 More details
 ![Architecture](images/architecture.png)
 
-- Source Repository: A central repository. In this repo we can using both local or github
+- Source Repository: A central repository (local or github)
 
 - MLFlow: Training components
     
@@ -37,23 +37,24 @@ More details
     - Snapshot / version of the model.
   
 - Feature / Artifacts database: 
-    - Training data, feature: local file in this example, its can be migrated to S3, GCS, Feature Store...  later. 
-    - Artifacts database: artifacts of trained model.Note that in a production setting, MLflow would be configured to log models against a persistent data store (e.g. GCS, S3, Minio, etc.).
+    - Training data, feature: local file in this example, its can be migrated to S3, GCS, Feature Store or other DB...  later. 
+    - Artifacts database: artifacts of trained model.Note that in a production setting, MLflow would be configured to log models against a persistent data store (e.g. NFS, GCS, S3, Minio, etc.).
 
-- Image repositories: Docker hub (on cloud can using GCP Image repositories/ AWS Container Registry)
+- Image repositories: Docker hub (or GCP Image repositories/ AWS Container Registry)
 
 - Seldon Core: Serving / Inference services
 
   *"Easier and faster to deploy your machine learning models and experiments at scale on Kubernetes"*
-
-    - Preprocessing request: **There are 3 three ways to do preprocessing**
-      - Within the model
-      - Transform function
+    - Deploy model
+    - Preprocessing request
+      👉 There are 3 three ways to do preprocessing
+      - Within the model : Simple but 
+      - Transform function : Simple 
       - Feature Store
 
-    - Dashboard: Model performance & other metrics
+    - Monitor: Dashboard of model performance & other metrics
 
-- Endpoints: post request & get result from Serving service by REST / GRPC
+- Endpoints: endpoints post request & get result from Serving service by REST / GRPC
 
 # II. Pre-requisites 🧰
 
@@ -81,7 +82,7 @@ Create new environment
 
 ## Seldon Core
 
-Setup document on local / Cloud... details: https://docs.seldon.io/projects/seldon-core/en/latest/nav/installation.html
+Setup document on local / cloud. Details: https://docs.seldon.io/projects/seldon-core/en/latest/nav/installation.html
 
 *Note: Seldon core is recommended install on GCP environment*
 
@@ -92,7 +93,7 @@ https://github.com/openshift/source-to-image#installation
 s2i is used to build custom serving server later
 
 
-# III. Training model
+# III. Training
 
 0. Model development
 
@@ -140,7 +141,7 @@ or using central repositories
 
 Interactive with jupyter notebook model/train_model.ipynb
 
-1. MLFlow Model tracking
+2. MLFlow Model tracking
 
 MLFlow artifacts (parameters, evaluation metrics... ) can be stored on a remote server, which can then be shared across the entire team. However, on our example we will store these locally on a mlruns folder
 
@@ -160,12 +161,12 @@ http://localhost:5000
 Test serve model at local
 
 ```bash
-!mlflow models serve -m mlruns\0\100ab95827c749d6803bb1093b36cd43\artifacts\model -p 1234
+!mlflow models serve -m mlruns/0/100ab95827c749d6803bb1093b36cd43/artifacts/model -p 1234
 
 !curl --location --request POST 'http://127.0.0.1:1234/invocations' --header 'Content-Type: application/json' --data-raw '{ "data": [ [ 0, 0, 0, 0, 0, 28, 4, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ] ] }' 
 ```
 
-Note: We do preprocessing later (at serving phase, so the input data for this model local test is in model's original features)
+Note: We do preprocessing later (at serving phase, so the input data for this model local test is in model's original features instead of store_id + product_id)
 
 
 3. MLFlow Model
@@ -196,7 +197,7 @@ or
 !aws s3 cp mlruns/0/65ac7f76fa744997a460fe8f5facbbba/* s3://bucket
 ```
 
-# V. Build model docker image
+# V. Build custom Seldon serving server
 
 ```bash
 !make
@@ -216,7 +217,7 @@ Push to docker hub (Edit corresponding to your docker hub repositories)
 
 # VI. Deploy model docker image 
 
-1. Edit seldon ML servers config values (MLFLOW_SERVER_CUSTOM)
+1. Add our MLFLOW_SERVER_CUSTOM config to Seldon servers config values
 
 ```YAML
 #deploy\values.yaml
@@ -231,7 +232,7 @@ predictor_servers:
     protocols:
       seldon:
         defaultImageVersion: "1.15.0-dev"
-        image: haunv/mlflowservercustom
+        image: haunv/mlflowservercustom:latest
     
 ```
 
@@ -244,7 +245,7 @@ predictor_servers:
     
 ```
 
-3. Deploy model to K8S 
+3. Deploy model to Seldon Core on K8S 
 
 YAML file
 
@@ -302,11 +303,11 @@ Create K8S namespace
 !kubectl apply -f deploy/seldon-deploy-toy-model.yaml
 ```
 
-check k8s status
+check Pod status
 ```bash
 !kubectl get pods -n seldon
 ```
-Our pod is ready
+Status when our's pod is ready
 
 ```console
 NAME                                             READY   STATUS    RESTARTS   AGE
@@ -353,14 +354,15 @@ Example: http://34.126.90.125/seldon/seldon/toy-model/api/v1.0/doc/#/
 ![apidocument](images/seldon-api-document.png)
 
 
-# VII. Dashboard
+# VII. Monitoring dashboard
 
 1. Install Seldon Analytics
   
 ```bash
 !kubectl config set-context $(kubectl config current-context) --namespace=seldon
 ```
-```console
+
+```bash
 !helm install seldon-core-analytics seldon-core/helm-charts/seldon-core-analytics  \
         --set grafana_prom_admin_password=password \
         --set persistence.enabled=false \
@@ -381,7 +383,7 @@ or try with http://34.124.157.160:3000/d/U1cSDzyZz/prediction-analytics?orgId=1&
 
 ![grafana](images/grafana.png)
 
-note: When deploy on GKE or AWS, we need to apply deploy/grafana-map-port.yaml LoadBalancer
+Note: If seldon core is deployed on GKE Google cloud, we need to apply deploy/grafana-map-port.yaml LoadBalancer
 
 # Delete, free resource
 
@@ -394,21 +396,13 @@ note: When deploy on GKE or AWS, we need to apply deploy/grafana-map-port.yaml L
 
 # Additional
 
-- Benchmark
+**With the architecture designed as above, there are some thing that we can do to improve productivity more in the real environment**
 
-Serving service's performance is considered to working stable on production
-
-- Auto scaling
-
-https://docs.seldon.io/projects/seldon-core/en/latest/graph/scaling.html
-
-# Discusstion
-
-??? Why we dont using Flask only?
-
-- On the REAL production, depend on requirement some components are considered:
-
-  - Expriment service: A/B testing
-  - CI/CD components: Jenkin & JenkinX
-  - Data drift detect: Alibi
-  - Explain (model interpretation): Alibi
+- File distributed system/ database instead of local files
+- More monitoring metrics
+- Benchmark serving service (must be done to work stably on the production)
+- Auto scaling Seldon deployments
+- Experiment service : A/B testing
+- CI/CD components : Jenkins & Jenkins X
+- Data drift detect: Alibi
+- Explain (model interpretation): Alibi
