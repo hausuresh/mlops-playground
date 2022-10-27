@@ -1,4 +1,4 @@
-Repository for pf homework
+Repository for ML Ops playground
 
 ```
 pf-model
